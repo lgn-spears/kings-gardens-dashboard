@@ -203,6 +203,30 @@ button:hover{opacity:.85}
 
 @media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}.span3,.alert-card,.comment-card,.gh-card{grid-column:span 2}}
 @media(max-width:640px){.grid{grid-template-columns:1fr}.span2,.span3,.alert-card,.comment-card,.gh-card{grid-column:span 1}.cal-wrap,.alert-top,.gh-top{flex-direction:column}}
+
+/* AUTH OVERLAY */
+.auth-overlay{position:fixed;inset:0;background:rgba(30,60,40,.92);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
+.auth-overlay.hidden{display:none}
+.auth-box{background:var(--white);border-radius:16px;padding:32px 28px;width:100%;max-width:380px;box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.auth-logo{text-align:center;margin-bottom:20px}
+.auth-logo-icon{width:56px;height:56px;background:var(--green);border-radius:14px;display:inline-flex;align-items:center;justify-content:center;font-size:30px;margin-bottom:8px}
+.auth-logo-title{font-size:22px;font-weight:600;color:var(--text)}
+.auth-logo-sub{font-size:12px;color:var(--text-muted)}
+.auth-tabs{display:flex;gap:0;margin-bottom:20px;border:1px solid var(--border);border-radius:8px;overflow:hidden}
+.auth-tab{flex:1;padding:9px 0;text-align:center;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--surface);color:var(--text-muted);transition:all .15s}
+.auth-tab.active{background:var(--green);color:#fff}
+.auth-field{margin-bottom:12px}
+.auth-field label{display:block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);margin-bottom:4px}
+.auth-field input{width:100%;padding:10px 12px;font-size:14px}
+.auth-submit{width:100%;padding:12px;font-size:14px;font-weight:600;margin-top:4px}
+.auth-error{background:var(--red-pale);color:var(--red);font-size:12px;padding:8px 12px;border-radius:7px;margin-bottom:12px;display:none}
+.auth-error.show{display:block}
+
+/* USER BADGE */
+.user-badge{font-size:11px;color:var(--text-muted);text-align:right;margin-bottom:2px}
+.user-badge strong{color:var(--green)}
+.user-badge a{color:var(--text-muted);cursor:pointer;text-decoration:underline}
+.user-badge a:hover{color:var(--red)}
 </style>
 </head>
 <body>
