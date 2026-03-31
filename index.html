@@ -127,11 +127,6 @@ button:hover{opacity:.85}
 .manual-row input{width:72px}
 .st-status{font-size:11px;color:var(--text-muted);margin-top:5px;min-height:16px}
 
-/* MESSAGE */
-.msg-body{background:var(--surface);border-radius:8px;padding:10px 12px;font-size:14px;line-height:1.65;min-height:56px;white-space:pre-wrap;margin-bottom:10px}
-.msg-edit{display:flex;gap:8px;align-items:flex-start}
-.msg-edit textarea{flex:1;min-height:60px;resize:vertical}
-.msg-ts{font-size:10px;color:var(--text-muted)}
 
 /* CALENDAR */
 .cal-wrap{display:flex;gap:16px}
@@ -227,6 +222,18 @@ button:hover{opacity:.85}
 .user-badge strong{color:var(--green)}
 .user-badge a{color:var(--text-muted);cursor:pointer;text-decoration:underline}
 .user-badge a:hover{color:var(--red)}
+
+/* BULLETIN BOARD */
+.bulletin-feed{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:10px}
+.bulletin-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
+.bulletin-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.bulletin-author{font-weight:600;color:var(--green);font-size:13px}
+.bulletin-time{font-size:11px;color:var(--text-muted)}
+.bulletin-body{font-size:13px;color:var(--text);line-height:1.55}
+.bulletin-del{cursor:pointer;color:var(--text-muted);font-size:12px;margin-left:8px;padding:0 2px}
+.bulletin-del:hover{color:var(--red)}
+.bulletin-compose{display:flex;gap:8px;align-items:flex-start}
+.bulletin-compose textarea{flex:1;min-height:50px;resize:vertical}
 </style>
 </head>
 <body>
@@ -320,16 +327,18 @@ button:hover{opacity:.85}
     </div>
   </div>
 
-  <!-- MESSAGE TO STAFF -->
+  <!-- BULLETIN BOARD -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Message to Staff</span>
-      <span class="msg-ts" id="msgTs"></span>
+      <span class="card-title">Team Bulletin Board</span>
+      <span class="badge badge-live">● Live</span>
     </div>
-    <div class="msg-body" id="msgBody">Welcome to King's Gardens! Check the board for today's tasks and have a great day. 🌱</div>
-    <div class="msg-edit">
-      <textarea id="msgInput" placeholder="Type a new message for your team…"></textarea>
-      <button class="btn-green" onclick="postMessage()">Post</button>
+    <div class="bulletin-compose">
+      <textarea id="bulletinInput" placeholder="Post an update for the team…"></textarea>
+      <button class="btn-green" onclick="postBulletin()" style="white-space:nowrap;align-self:flex-end;height:50px">Post</button>
+    </div>
+    <div class="bulletin-feed" id="bulletinFeed">
+      <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading messages…</div>
     </div>
   </div>
 
@@ -498,7 +507,15 @@ let listenersInitialized = false;
 function initFirestoreListeners() {
   if (listenersInitialized) return;
   listenersInitialized = true;
-  // Will be filled in by subsequent tasks
+
+  // Bulletin board
+  db.collection('messages').orderBy('createdAt', 'desc').limit(50)
+    .onSnapshot(snap => {
+      renderBulletin(snap.docs);
+    }, err => {
+      document.getElementById('bulletinFeed').innerHTML =
+        '<div style="font-size:12px;color:var(--red)">Could not load messages: ' + err.message + '</div>';
+    });
 }
 
 // ── CLOCK ──────────────────────────────────────────
@@ -846,13 +863,45 @@ function manualStation(){
   setStation(isNaN(t)?null:t,isNaN(h)?null:h,isNaN(w)?null:w,null,isNaN(r)?null:r);
 }
 
-// ── STAFF MESSAGE ─────────────────────────────────
-function postMessage(){
-  const v=document.getElementById('msgInput').value.trim();
-  if(!v)return;
-  document.getElementById('msgBody').textContent=v;
-  document.getElementById('msgInput').value='';
-  document.getElementById('msgTs').textContent='Updated '+new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'});
+// ── BULLETIN BOARD ───────────────────────────────
+async function postBulletin() {
+  const input = document.getElementById('bulletinInput');
+  const body = input.value.trim();
+  if (!body || !currentUser) return;
+  input.value = '';
+  await db.collection('messages').add({
+    authorUid: currentUser.uid,
+    authorName: currentUser.displayName || currentUser.email,
+    body: body,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function deleteBulletin(id) {
+  await db.collection('messages').doc(id).delete();
+}
+
+function renderBulletin(docs) {
+  const el = document.getElementById('bulletinFeed');
+  if (!docs.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);padding:8px 0">No messages yet. Post the first update!</div>';
+    return;
+  }
+  el.innerHTML = docs.map(doc => {
+    const d = doc.data();
+    const ts = d.createdAt ? d.createdAt.toDate().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    const canDelete = currentUser && d.authorUid === currentUser.uid;
+    return '<div class="bulletin-item">' +
+      '<div class="bulletin-meta">' +
+        '<span class="bulletin-author">' + (d.authorName || 'Staff') + '</span>' +
+        '<span>' +
+          '<span class="bulletin-time">' + ts + '</span>' +
+          (canDelete ? '<span class="bulletin-del" onclick="deleteBulletin(\'' + doc.id + '\')" title="Delete">✕</span>' : '') +
+        '</span>' +
+      '</div>' +
+      '<div class="bulletin-body">' + d.body + '</div>' +
+    '</div>';
+  }).join('');
 }
 
 // ── DELIVERY CALENDAR ─────────────────────────────
