@@ -196,8 +196,30 @@ button:hover{opacity:.85}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
 
-@media(max-width:1000px){.grid{grid-template-columns:1fr 1fr}.span3,.alert-card,.comment-card,.gh-card{grid-column:span 2}}
-@media(max-width:640px){.grid{grid-template-columns:1fr}.span2,.span3,.alert-card,.comment-card,.gh-card{grid-column:span 1}.cal-wrap,.alert-top,.gh-top{flex-direction:column}}
+@media(max-width:1000px){
+  .grid{grid-template-columns:1fr 1fr}
+  .span3,.alert-card,.comment-card,.gh-card{grid-column:span 2}
+}
+@media(max-width:640px){
+  .grid{grid-template-columns:1fr;padding:10px 12px;gap:12px}
+  .span2,.span3,.alert-card,.comment-card,.gh-card{grid-column:span 1}
+  .cal-wrap,.alert-top,.gh-top{flex-direction:column}
+  .header{padding:10px 14px;flex-direction:column;gap:8px;text-align:center}
+  .header-left{justify-content:center}
+  .user-badge{text-align:center}
+  .clock{text-align:center}
+  .date-line{text-align:center}
+  .bulletin-feed{max-height:200px}
+  .sched-table th:first-child,.sched-table td:first-child{min-width:90px}
+  .sched-actions{flex-direction:column}
+  .sched-actions input[type="text"]{width:100%}
+  .event-add{flex-direction:column}
+  .event-add input,.event-add select{width:100%}
+  .gdd-bases{grid-template-columns:1fr}
+  button,.btn-green,.btn-blue,.btn-ghost{min-height:44px}
+  input,textarea,select{min-height:44px;font-size:16px}
+  .auth-box{margin:16px;padding:24px 20px}
+}
 
 /* AUTH OVERLAY */
 .auth-overlay{position:fixed;inset:0;background:rgba(30,60,40,.92);z-index:100;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(6px)}
@@ -470,10 +492,8 @@ button:hover{opacity:.85}
 </div>
 
 <div class="footer">
-  Weather auto-refreshes every 15 min &nbsp;·&nbsp;
-  <a href="#" onclick="fetchNWS();
-fetchGDD();
-setInterval(fetchGDD,60*60*1000);return false">Refresh now</a> &nbsp;·&nbsp;
+  Weather auto-refreshes every 15 min &nbsp;·&nbsp; All data syncs in real-time &nbsp;·&nbsp;
+  <a href="#" onclick="fetchNWS();fetchGDD();return false">Refresh weather</a> &nbsp;·&nbsp;
   <a href="#" onclick="demoAlert();return false">Demo: freeze alert</a> &nbsp;·&nbsp;
   <a href="#" onclick="demoGH();return false">Demo: greenhouse warning</a> &nbsp;·&nbsp;
   <a href="#" onclick="demoClear();return false">Demo: clear all</a>
