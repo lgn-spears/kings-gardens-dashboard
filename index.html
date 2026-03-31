@@ -516,6 +516,10 @@ function initFirestoreListeners() {
       document.getElementById('bulletinFeed').innerHTML =
         '<div style="font-size:12px;color:var(--red)">Could not load messages: ' + err.message + '</div>';
     });
+
+  // Calendar
+  selectDay(fmtKey(new Date()));
+  subscribeCalMonth();
 }
 
 // ── CLOCK ──────────────────────────────────────────
@@ -905,44 +909,96 @@ function renderBulletin(docs) {
 }
 
 // ── DELIVERY CALENDAR ─────────────────────────────
-let calView=new Date(),calSel=null,calEvs={};
-function fmtKey(d){return`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`}
-function changeMonth(dir){calView=new Date(calView.getFullYear(),calView.getMonth()+dir,1);renderCal()}
-function selectDay(k){calSel=k;renderCal();const d=new Date(k+'T12:00:00');document.getElementById('calDateLbl').textContent=d.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric',year:'numeric'});renderEvList()}
+let calView = new Date(), calSel = null, calEvsByDate = {};
 
-function renderCal(){
-  const y=calView.getFullYear(),m=calView.getMonth();
-  document.getElementById('calMonthLbl').textContent=calView.toLocaleDateString('en-US',{month:'long',year:'numeric'});
-  const fd=new Date(y,m,1).getDay(),dim=new Date(y,m+1,0).getDate(),tk=fmtKey(new Date());
-  let h=['S','M','T','W','T','F','S'].map(d=>`<div class="cal-dow">${d}</div>`).join('');
-  for(let i=0;i<fd;i++)h+='<div></div>';
-  for(let d=1;d<=dim;d++){
-    const k=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    const c=['cal-day',k===tk?'today':'',k===calSel&&k!==tk?'selected':'',calEvs[k]?.length?'has-event':''].filter(Boolean).join(' ');
-    h+=`<div class="${c}" onclick="selectDay('${k}')">${d}</div>`;
+function fmtKey(d) {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+function changeMonth(dir) {
+  calView = new Date(calView.getFullYear(), calView.getMonth() + dir, 1);
+  renderCal();
+  subscribeCalMonth();
+}
+function selectDay(k) {
+  calSel = k;
+  renderCal();
+  const d = new Date(k + 'T12:00:00');
+  document.getElementById('calDateLbl').textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+  renderEvList();
+}
+
+function renderCal() {
+  const y = calView.getFullYear(), m = calView.getMonth();
+  document.getElementById('calMonthLbl').textContent = calView.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+  const fd = new Date(y, m, 1).getDay(), dim = new Date(y, m + 1, 0).getDate(), tk = fmtKey(new Date());
+  let h = ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(d => '<div class="cal-dow">' + d + '</div>').join('');
+  for (let i = 0; i < fd; i++) h += '<div></div>';
+  for (let d = 1; d <= dim; d++) {
+    const k = y + '-' + String(m + 1).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+    const c = ['cal-day', k === tk ? 'today' : '', k === calSel && k !== tk ? 'selected' : '', calEvsByDate[k]?.length ? 'has-event' : ''].filter(Boolean).join(' ');
+    h += '<div class="' + c + '" onclick="selectDay(\'' + k + '\')">' + d + '</div>';
   }
-  document.getElementById('calGrid').innerHTML=h;
+  document.getElementById('calGrid').innerHTML = h;
 }
 
-function renderEvList(){
-  const el=document.getElementById('eventList'),evs=calEvs[calSel]||[];
-  if(!evs.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted)">No deliveries scheduled for this date.</div>';return;}
-  const dc={delivery:'dot-delivery',vendor:'dot-vendor',misc:'dot-misc'};
-  el.innerHTML=evs.map((e,i)=>`<div class="event-item"><span class="ev-dot ${dc[e.type]||'dot-misc'}"></span><span class="ev-name">${e.name}</span><span class="ev-time">${e.time}</span><span class="ev-del" onclick="deleteEvent(${i})" title="Remove">✕</span></div>`).join('');
+function renderEvList() {
+  const el = document.getElementById('eventList'), evs = calEvsByDate[calSel] || [];
+  if (!evs.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">No deliveries scheduled for this date.</div>';
+    return;
+  }
+  const dc = { delivery: 'dot-delivery', vendor: 'dot-vendor', misc: 'dot-misc' };
+  el.innerHTML = evs.map(e =>
+    '<div class="event-item">' +
+      '<span class="ev-dot ' + (dc[e.type] || 'dot-misc') + '"></span>' +
+      '<span class="ev-name">' + e.name + '</span>' +
+      '<span class="ev-time">' + e.time + '</span>' +
+      '<span class="ev-del" onclick="deleteCalEvent(\'' + e.id + '\')" title="Remove">✕</span>' +
+    '</div>'
+  ).join('');
 }
 
-function addEvent(){
-  if(!calSel){alert('Select a date first.');return;}
-  const name=document.getElementById('evName').value.trim();
-  if(!name)return;
-  const time=document.getElementById('evTime').value.trim(),type=document.getElementById('evType').value;
-  if(!calEvs[calSel])calEvs[calSel]=[];
-  calEvs[calSel].push({name,time,type});
-  document.getElementById('evName').value='';document.getElementById('evTime').value='';
-  renderCal();renderEvList();
+async function addEvent() {
+  if (!calSel) { alert('Select a date first.'); return; }
+  const name = document.getElementById('evName').value.trim();
+  if (!name || !currentUser) return;
+  const time = document.getElementById('evTime').value.trim();
+  const type = document.getElementById('evType').value;
+  await db.collection('calendar').add({
+    date: calSel,
+    name: name,
+    time: time,
+    type: type,
+    createdBy: currentUser.uid
+  });
+  document.getElementById('evName').value = '';
+  document.getElementById('evTime').value = '';
 }
 
-function deleteEvent(i){calEvs[calSel].splice(i,1);renderCal();renderEvList()}
+async function deleteCalEvent(id) {
+  await db.collection('calendar').doc(id).delete();
+}
+
+let calUnsub = null;
+function subscribeCalMonth() {
+  if (calUnsub) calUnsub();
+  const y = calView.getFullYear(), m = calView.getMonth();
+  const startKey = y + '-' + String(m + 1).padStart(2, '0') + '-01';
+  const endKey = y + '-' + String(m + 1).padStart(2, '0') + '-31';
+  calUnsub = db.collection('calendar')
+    .where('date', '>=', startKey)
+    .where('date', '<=', endKey)
+    .onSnapshot(snap => {
+      calEvsByDate = {};
+      snap.docs.forEach(doc => {
+        const d = doc.data();
+        if (!calEvsByDate[d.date]) calEvsByDate[d.date] = [];
+        calEvsByDate[d.date].push({ id: doc.id, ...d });
+      });
+      renderCal();
+      renderEvList();
+    });
+}
 
 
 // ── GROWING DEGREE DAYS ───────────────────────────
@@ -1067,7 +1123,6 @@ fetchNWS();
 fetchGDD();
 autoConnectStation();
 renderCal();
-selectDay(fmtKey(new Date()));
 setInterval(fetchNWS,15*60*1000);
 setInterval(fetchGDD,60*60*1000);
 </script>
