@@ -6,6 +6,9 @@
 <title>King's Gardens — Staff Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 <style>
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
@@ -364,6 +367,21 @@ setInterval(fetchGDD,60*60*1000);return false">Refresh now</a> &nbsp;·&nbsp;
 </div>
 
 <script>
+// ── FIREBASE ─────────────────────────────────────
+const firebaseConfig = {
+  // TODO: Replace with your Firebase project config from
+  // https://console.firebase.google.com → Project Settings → Your apps → Config
+  apiKey: "YOUR_API_KEY",
+  authDomain: "YOUR_PROJECT.firebaseapp.com",
+  projectId: "YOUR_PROJECT_ID",
+  storageBucket: "YOUR_PROJECT.firebasestorage.app",
+  messagingSenderId: "YOUR_SENDER_ID",
+  appId: "YOUR_APP_ID"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+
 // ── CLOCK ──────────────────────────────────────────
 function tick(){
   const n=new Date(),h=n.getHours(),m=n.getMinutes();
