@@ -442,6 +442,17 @@ button:hover{opacity:.85}
           <div class="gdd-bar-label"><span>Season progress</span><span id="gddPct">0%</span></div>
           <div class="gdd-bar-track"><div class="gdd-bar-fill" id="gddBar" style="width:0%"></div></div>
         </div>
+        <div style="display:flex;gap:16px;margin-bottom:8px">
+          <div style="background:var(--surface);border-radius:8px;padding:8px 10px;flex:1">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)"><span id="gddYearLabel">--</span> Total</div>
+            <div style="font-size:17px;font-weight:500;margin-top:2px" id="gddPriorTotal">--</div>
+            <div style="font-size:11px;color:var(--text-mid);margin-top:1px" id="gddPriorYear">--</div>
+          </div>
+          <div style="background:var(--surface);border-radius:8px;padding:8px 10px;flex:1">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)">vs Last Year</div>
+            <div style="font-size:17px;font-weight:500;margin-top:2px" id="gddDelta">--</div>
+          </div>
+        </div>
         <div class="gdd-status" id="gddStatus"></div>
       </div>
       <div style="flex:1">
