@@ -231,6 +231,32 @@ button:hover{opacity:.85}
 </head>
 <body>
 
+<div class="auth-overlay" id="authOverlay">
+  <div class="auth-box">
+    <div class="auth-logo">
+      <div class="auth-logo-icon">🌿</div>
+      <div class="auth-logo-title">King's Gardens</div>
+      <div class="auth-logo-sub">Staff Dashboard — Sign in to continue</div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab active" id="tabLogin" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" id="tabRegister" onclick="switchAuthTab('register')">Register</button>
+    </div>
+    <div class="auth-error" id="authError"></div>
+    <div id="authLoginForm">
+      <div class="auth-field"><label>Email</label><input type="email" id="loginEmail" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="loginPass" placeholder="Your password"></div>
+      <button class="btn-green auth-submit" onclick="doLogin()">Sign In</button>
+    </div>
+    <div id="authRegisterForm" style="display:none">
+      <div class="auth-field"><label>Display Name</label><input type="text" id="regName" placeholder="Your name"></div>
+      <div class="auth-field"><label>Email</label><input type="email" id="regEmail" placeholder="you@example.com"></div>
+      <div class="auth-field"><label>Password</label><input type="password" id="regPass" placeholder="At least 6 characters"></div>
+      <button class="btn-green auth-submit" onclick="doRegister()">Create Account</button>
+    </div>
+  </div>
+</div>
+
 <div class="header">
   <div class="header-left">
     <div class="logo-mark">🌿</div>
@@ -240,6 +266,7 @@ button:hover{opacity:.85}
     </div>
   </div>
   <div>
+    <div class="user-badge" id="userBadge"></div>
     <div class="clock" id="clock">--:-- --</div>
     <div class="date-line" id="dateLine">Loading…</div>
   </div>
@@ -405,6 +432,74 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// ── AUTH ──────────────────────────────────────────
+let currentUser = null;
+
+function switchAuthTab(tab) {
+  document.getElementById('tabLogin').classList.toggle('active', tab === 'login');
+  document.getElementById('tabRegister').classList.toggle('active', tab === 'register');
+  document.getElementById('authLoginForm').style.display = tab === 'login' ? '' : 'none';
+  document.getElementById('authRegisterForm').style.display = tab === 'register' ? '' : 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+
+function showAuthError(msg) {
+  const el = document.getElementById('authError');
+  el.textContent = msg;
+  el.classList.add('show');
+}
+
+async function doLogin() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  if (!email || !pass) { showAuthError('Enter email and password.'); return; }
+  try {
+    await auth.signInWithEmailAndPassword(email, pass);
+  } catch (e) {
+    showAuthError(e.code === 'auth/user-not-found' ? 'No account found with that email.' :
+                  e.code === 'auth/wrong-password' ? 'Incorrect password.' :
+                  e.code === 'auth/invalid-credential' ? 'Invalid email or password.' :
+                  e.message);
+  }
+}
+
+async function doRegister() {
+  const name = document.getElementById('regName').value.trim();
+  const email = document.getElementById('regEmail').value.trim();
+  const pass = document.getElementById('regPass').value;
+  if (!name || !email || !pass) { showAuthError('Fill in all fields.'); return; }
+  if (pass.length < 6) { showAuthError('Password must be at least 6 characters.'); return; }
+  try {
+    const cred = await auth.createUserWithEmailAndPassword(email, pass);
+    await cred.user.updateProfile({ displayName: name });
+  } catch (e) {
+    showAuthError(e.code === 'auth/email-already-in-use' ? 'That email is already registered.' : e.message);
+  }
+}
+
+function signOut() { auth.signOut(); }
+
+auth.onAuthStateChanged(user => {
+  currentUser = user;
+  const overlay = document.getElementById('authOverlay');
+  const badge = document.getElementById('userBadge');
+  if (user) {
+    overlay.classList.add('hidden');
+    badge.innerHTML = 'Signed in as <strong>' + (user.displayName || user.email) + '</strong> · <a onclick="signOut()">Sign out</a>';
+    initFirestoreListeners();
+  } else {
+    overlay.classList.remove('hidden');
+    badge.innerHTML = '';
+  }
+});
+
+let listenersInitialized = false;
+function initFirestoreListeners() {
+  if (listenersInitialized) return;
+  listenersInitialized = true;
+  // Will be filled in by subsequent tasks
+}
 
 // ── CLOCK ──────────────────────────────────────────
 function tick(){
