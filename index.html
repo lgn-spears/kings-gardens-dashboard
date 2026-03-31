@@ -234,6 +234,27 @@ button:hover{opacity:.85}
 .bulletin-del:hover{color:var(--red)}
 .bulletin-compose{display:flex;gap:8px;align-items:flex-start}
 .bulletin-compose textarea{flex:1;min-height:50px;resize:vertical}
+
+/* SCHEDULE */
+.sched-wrap{overflow-x:auto}
+.sched-table{width:100%;border-collapse:collapse;min-width:560px}
+.sched-table th{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted);padding:6px 4px;text-align:center;border-bottom:2px solid var(--border)}
+.sched-table th:first-child,.sched-table td:first-child{text-align:left;padding-left:8px;position:sticky;left:0;background:var(--white);z-index:1}
+.sched-table th:last-child,.sched-table td:last-child{text-align:left;padding-left:8px}
+.sched-table td{padding:8px 4px;text-align:center;border-bottom:1px solid var(--border);font-size:13px}
+.sched-on{background:var(--green-pale);color:var(--green);padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600;display:inline-block}
+.sched-off{color:var(--border);font-size:11px}
+.sched-name{font-weight:500;color:var(--text)}
+.sched-site{font-size:12px;color:var(--text-mid)}
+.sched-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.sched-nav-lbl{font-size:13px;font-weight:600}
+.sched-actions{display:flex;gap:6px;align-items:center;margin-top:10px;flex-wrap:wrap}
+.sched-actions input,.sched-actions select{font-size:12px;padding:5px 8px}
+.sched-actions input[type="text"]{min-width:100px}
+.sched-row-del{cursor:pointer;color:var(--text-muted);font-size:12px;padding:0 2px}
+.sched-row-del:hover{color:var(--red)}
+.sched-day-toggle{cursor:pointer;user-select:none;padding:4px 8px;border-radius:6px;transition:background .1s}
+.sched-day-toggle:hover{background:var(--green-pale)}
 </style>
 </head>
 <body>
@@ -345,6 +366,38 @@ button:hover{opacity:.85}
   <!-- COMMENT SLOT: observation log card injected here when alert fires -->
   <div id="commentSlot" style="display:contents"></div>
 
+  <!-- SHIFT SCHEDULE -->
+  <div class="card span3">
+    <div class="card-header">
+      <span class="card-title">Weekly Schedule</span>
+      <span class="badge badge-blue">Crew</span>
+    </div>
+    <div class="sched-nav">
+      <button class="cal-nav-btn" onclick="changeSchedWeek(-1)">‹</button>
+      <span class="sched-nav-lbl" id="schedWeekLbl">Loading…</span>
+      <button class="cal-nav-btn" onclick="changeSchedWeek(1)">›</button>
+    </div>
+    <div class="sched-wrap">
+      <table class="sched-table">
+        <thead>
+          <tr>
+            <th style="min-width:110px">Crew Member</th>
+            <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th>
+            <th style="min-width:120px">Job Site</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="schedBody">
+          <tr><td colspan="9" style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px">Loading schedule…</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="sched-actions">
+      <input type="text" id="schedName" placeholder="Name">
+      <input type="text" id="schedSite" placeholder="Job site">
+      <button class="btn-blue" onclick="addSchedRow()" style="white-space:nowrap">+ Add Crew</button>
+    </div>
+  </div>
 
   <!-- GROWING DEGREE DAYS -->
   <div class="card span2" id="gddCard">
@@ -528,6 +581,9 @@ function initFirestoreListeners() {
       if (!document.getElementById('commentCard')) injectCommentCard();
       renderComments(snap.docs);
     });
+
+  // Schedule
+  subscribeSchedWeek();
 }
 
 // ── CLOCK ──────────────────────────────────────────
@@ -1018,6 +1074,128 @@ function subscribeCalMonth() {
     });
 }
 
+
+// ── SHIFT SCHEDULE ───────────────────────────────
+let schedWeekStart = getMonday(new Date());
+let schedUnsub = null;
+let schedEntries = [];
+
+function getMonday(d) {
+  const dt = new Date(d);
+  const day = dt.getDay();
+  const diff = dt.getDate() - day + (day === 0 ? -6 : 1);
+  return new Date(dt.getFullYear(), dt.getMonth(), diff);
+}
+
+function fmtSchedKey(d) {
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function changeSchedWeek(dir) {
+  schedWeekStart = new Date(schedWeekStart.getFullYear(), schedWeekStart.getMonth(), schedWeekStart.getDate() + dir * 7);
+  subscribeSchedWeek();
+}
+
+function subscribeSchedWeek() {
+  if (schedUnsub) schedUnsub();
+  const key = fmtSchedKey(schedWeekStart);
+  const endDate = new Date(schedWeekStart);
+  endDate.setDate(endDate.getDate() + 5);
+  const weekLabel = schedWeekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) +
+    ' – ' + endDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('schedWeekLbl').textContent = weekLabel;
+
+  schedUnsub = db.collection('schedules').doc(key)
+    .onSnapshot(doc => {
+      if (doc.exists) {
+        schedEntries = doc.data().entries || [];
+      } else {
+        schedEntries = [];
+      }
+      renderSched();
+    });
+}
+
+function renderSched() {
+  const el = document.getElementById('schedBody');
+  const days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+  if (!schedEntries.length) {
+    el.innerHTML = '<tr><td colspan="9" style="font-size:12px;color:var(--text-muted);text-align:center;padding:16px">No crew scheduled this week. Add someone below.</td></tr>';
+    return;
+  }
+  el.innerHTML = schedEntries.map((entry, i) => {
+    const dayCells = days.map(d =>
+      '<td><span class="sched-day-toggle" onclick="toggleSchedDay(' + i + ',\'' + d + '\')">' +
+        (entry.days && entry.days[d] ? '<span class="sched-on">On</span>' : '<span class="sched-off">—</span>') +
+      '</span></td>'
+    ).join('');
+    return '<tr>' +
+      '<td class="sched-name" onclick="editSchedRow(' + i + ')" style="cursor:pointer" title="Click to edit">' + (entry.personName || '') + '</td>' +
+      dayCells +
+      '<td class="sched-site" onclick="editSchedRow(' + i + ')" style="cursor:pointer" title="Click to edit">' + (entry.jobSite || '') + '</td>' +
+      '<td><span class="sched-row-del" onclick="deleteSchedRow(' + i + ')" title="Remove">✕</span></td>' +
+    '</tr>';
+  }).join('');
+}
+
+async function saveSchedEntries() {
+  const key = fmtSchedKey(schedWeekStart);
+  await db.collection('schedules').doc(key).set({
+    weekStart: key,
+    entries: schedEntries,
+    lastEditedBy: currentUser ? (currentUser.displayName || currentUser.email) : 'Unknown',
+    lastEditedAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+
+async function addSchedRow() {
+  const nameEl = document.getElementById('schedName');
+  const siteEl = document.getElementById('schedSite');
+  const name = nameEl.value.trim();
+  if (!name || !currentUser) return;
+  const site = siteEl.value.trim();
+  schedEntries.push({
+    personName: name,
+    days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: false },
+    jobSite: site,
+    notes: ''
+  });
+  nameEl.value = '';
+  siteEl.value = '';
+  await saveSchedEntries();
+}
+
+async function toggleSchedDay(rowIndex, day) {
+  if (!schedEntries[rowIndex] || !currentUser) return;
+  if (!schedEntries[rowIndex].days) schedEntries[rowIndex].days = {};
+  schedEntries[rowIndex].days[day] = !schedEntries[rowIndex].days[day];
+  await saveSchedEntries();
+}
+
+async function deleteSchedRow(rowIndex) {
+  if (!currentUser) return;
+  schedEntries.splice(rowIndex, 1);
+  await saveSchedEntries();
+}
+
+function editSchedRow(rowIndex) {
+  const entry = schedEntries[rowIndex];
+  if (!entry) return;
+  const el = document.getElementById('schedBody');
+  const row = el.rows[rowIndex];
+  row.cells[0].innerHTML = '<input type="text" id="editSchedName" value="' + (entry.personName || '') + '" style="width:100%;font-size:13px">';
+  row.cells[7].innerHTML = '<input type="text" id="editSchedSite" value="' + (entry.jobSite || '') + '" style="width:100%;font-size:12px">';
+  row.cells[8].innerHTML = '<button class="btn-ghost" onclick="saveSchedEdit(' + rowIndex + ')" style="font-size:11px;padding:4px 8px;white-space:nowrap">Save</button>';
+}
+
+async function saveSchedEdit(rowIndex) {
+  const nameEl = document.getElementById('editSchedName');
+  const siteEl = document.getElementById('editSchedSite');
+  if (!nameEl || !currentUser) return;
+  schedEntries[rowIndex].personName = nameEl.value.trim() || schedEntries[rowIndex].personName;
+  schedEntries[rowIndex].jobSite = siteEl ? siteEl.value.trim() : schedEntries[rowIndex].jobSite;
+  await saveSchedEntries();
+}
 
 // ── GROWING DEGREE DAYS ───────────────────────────
 // Source: Open-Meteo ERA5 reanalysis — free, no API key, full CORS.
