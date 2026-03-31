@@ -520,6 +520,14 @@ function initFirestoreListeners() {
   // Calendar
   selectDay(fmtKey(new Date()));
   subscribeCalMonth();
+
+  // Frost observations — always inject the card and listen for updates
+  if (!document.getElementById('commentCard')) injectCommentCard();
+  db.collection('observations').orderBy('createdAt', 'asc')
+    .onSnapshot(snap => {
+      if (!document.getElementById('commentCard')) injectCommentCard();
+      renderComments(snap.docs);
+    });
 }
 
 // ── CLOCK ──────────────────────────────────────────
@@ -659,7 +667,7 @@ async function fetchNWS(){
 }
 
 // ── ALERT CARD ─────────────────────────────────────
-let alertActive=false, postComments=[];
+let alertActive = false;
 
 function severityStyle(name,lo){
   const e=(name||'').toLowerCase();
@@ -700,28 +708,27 @@ function showAlert({name,lo,headline,desc,exp}){
   if(!document.getElementById('commentCard')) injectCommentCard();
 }
 
-function clearAlert(){
-  alertActive=false;
-  document.getElementById('alertSlot').innerHTML='';
-  if(postComments.length===0) document.getElementById('commentSlot').innerHTML='';
+function clearAlert() {
+  alertActive = false;
+  document.getElementById('alertSlot').innerHTML = '';
+  // Keep comment card visible — Firestore listener handles rendering
 }
 
 function injectCommentCard(){
   document.getElementById('commentSlot').innerHTML=`
     <div class="comment-card" id="commentCard">
       <div class="card-header">
-        <span class="card-title">📋 Frost / Freeze Event — Staff Observation Log</span>
-        <span class="badge badge-red">Log your observations</span>
+        <span class="card-title">Staff Observation Log</span>
+        <span class="badge badge-live">● Live</span>
       </div>
       <p style="font-size:12px;color:var(--text-muted);margin-bottom:12px;line-height:1.65">
-        Record plant damage, actions taken, areas affected, greenhouse temps, and anything else worth noting during or after this event. Entries are timestamped automatically.
+        Record observations, plant conditions, actions taken, or anything the team should know. Entries are timestamped and visible to everyone.
       </p>
       <div class="comment-list" id="commentList">
         <div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0">No observations logged yet.</div>
       </div>
-      <div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">
-        <input id="commentAuthor" placeholder="Your name" style="width:160px">
-        <span style="font-size:11px;color:var(--text-muted)">then type your note →</span>
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:8px">
+        Posting as <strong style="color:var(--green)">${currentUser ? (currentUser.displayName || currentUser.email) : 'Staff'}</strong>
       </div>
       <div class="comment-input-row">
         <textarea id="commentInput" placeholder="e.g. Covered flats in greenhouse 2. Heater holding at 48°F. Some wilting on exposed impatiens in lot C. Moved citrus inside."></textarea>
@@ -731,22 +738,33 @@ function injectCommentCard(){
   renderComments();
 }
 
-function addComment(){
-  const ae=document.getElementById('commentAuthor'),ie=document.getElementById('commentInput');
-  if(!ae||!ie)return;
-  const body=ie.value.trim();
-  if(!body){ie.focus();return;}
-  postComments.push({who:ae.value.trim()||'Staff',body,ts:new Date().toLocaleString('en-US',{month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})});
-  ie.value='';
-  renderComments();
+async function addComment() {
+  const ie = document.getElementById('commentInput');
+  if (!ie || !currentUser) return;
+  const body = ie.value.trim();
+  if (!body) { ie.focus(); return; }
+  ie.value = '';
+  await db.collection('observations').add({
+    authorUid: currentUser.uid,
+    authorName: currentUser.displayName || currentUser.email,
+    body: body,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
 }
 
-function renderComments(){
-  const el=document.getElementById('commentList');
-  if(!el)return;
-  if(!postComments.length){el.innerHTML='<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0">No observations logged yet.</div>';return;}
-  el.innerHTML=postComments.map(c=>`<div class="comment-item"><div class="comment-meta">${c.who} &nbsp;·&nbsp; ${c.ts}</div><div class="comment-body">${c.body}</div></div>`).join('');
-  el.scrollTop=el.scrollHeight;
+function renderComments(docs) {
+  const el = document.getElementById('commentList');
+  if (!el) return;
+  if (!docs || !docs.length) {
+    el.innerHTML = '<div style="font-size:12px;color:var(--text-muted);font-style:italic;padding:4px 0">No observations logged yet.</div>';
+    return;
+  }
+  el.innerHTML = docs.map(doc => {
+    const c = doc.data();
+    const ts = c.createdAt ? c.createdAt.toDate().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : '';
+    return '<div class="comment-item"><div class="comment-meta">' + (c.authorName || 'Staff') + ' &nbsp;·&nbsp; ' + ts + '</div><div class="comment-body">' + c.body + '</div></div>';
+  }).join('');
+  el.scrollTop = el.scrollHeight;
 }
 
 function demoAlert(){
