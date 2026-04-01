@@ -213,6 +213,8 @@ button:hover{opacity:.85}
   .user-badge{text-align:center}
   .clock{text-align:center}
   .date-line{text-align:center}
+  .bulletin-tall{grid-column:span 1;grid-row:span 1}
+  .bulletin-tall .bulletin-feed{max-height:200px}
   .bulletin-feed{max-height:200px}
   .sched-table th:first-child,.sched-table td:first-child{min-width:90px}
   .sched-actions{flex-direction:column}
@@ -250,6 +252,10 @@ button:hover{opacity:.85}
 .user-badge a:hover{color:var(--red)}
 
 /* BULLETIN BOARD */
+.bulletin-tall{grid-column:3;grid-row:span 3;display:flex;flex-direction:column}
+.bulletin-tall .bulletin-feed{flex:1;max-height:none}
+.bulletin-tall .card-header{flex-shrink:0}
+.bulletin-tall .bulletin-compose{flex-shrink:0}
 .bulletin-feed{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:10px}
 .bulletin-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .bulletin-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
@@ -343,6 +349,21 @@ button:hover{opacity:.85}
     <div id="nwsContent" style="color:var(--text-muted);font-size:13px;padding:8px 0">Fetching weather…</div>
   </div>
 
+  <!-- BULLETIN BOARD (tall right column) -->
+  <div class="card bulletin-tall">
+    <div class="card-header">
+      <span class="card-title">Team Bulletin Board</span>
+      <span class="badge badge-live">● Live</span>
+    </div>
+    <div class="bulletin-compose">
+      <textarea id="bulletinInput" placeholder="Post an update for the team…"></textarea>
+      <button class="btn-green" onclick="postBulletin()" style="white-space:nowrap;align-self:flex-end;height:50px">Post</button>
+    </div>
+    <div class="bulletin-feed" id="bulletinFeed">
+      <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading messages…</div>
+    </div>
+  </div>
+
   <!-- OUTDOOR WORK CONDITIONS -->
   <div class="card">
     <div class="card-header">
@@ -359,28 +380,13 @@ button:hover{opacity:.85}
   </div>
 
   <!-- WEEK AHEAD PLANNING -->
-  <div class="card span2">
+  <div class="card" style="grid-column:span 2">
     <div class="card-header">
       <span class="card-title">Week Ahead Planning</span>
       <span class="badge badge-live">● NWS</span>
     </div>
     <div class="week-grid" id="weekGrid">
       <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading forecast…</div>
-    </div>
-  </div>
-
-  <!-- BULLETIN BOARD -->
-  <div class="card span3">
-    <div class="card-header">
-      <span class="card-title">Team Bulletin Board</span>
-      <span class="badge badge-live">● Live</span>
-    </div>
-    <div class="bulletin-compose">
-      <textarea id="bulletinInput" placeholder="Post an update for the team…"></textarea>
-      <button class="btn-green" onclick="postBulletin()" style="white-space:nowrap;align-self:flex-end;height:50px">Post</button>
-    </div>
-    <div class="bulletin-feed" id="bulletinFeed">
-      <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading messages…</div>
     </div>
   </div>
 
