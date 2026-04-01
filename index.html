@@ -120,11 +120,6 @@ button:hover{opacity:.85}
 .st-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--blue)}
 .st-val{font-size:20px;font-weight:500;color:#1d3557;margin-top:2px}
 .st-sub{font-size:11px;color:#457b9d;margin-top:1px}
-.key-row{display:flex;gap:6px;align-items:center;margin-top:8px}
-.key-row label{font-size:11px;color:var(--text-muted);white-space:nowrap;flex-shrink:0}
-.key-row input{flex:1}
-.manual-row{display:flex;gap:5px;flex-wrap:wrap;margin-top:6px}
-.manual-row input{width:72px}
 .st-status{font-size:11px;color:var(--text-muted);margin-top:5px;min-height:16px}
 
 
@@ -339,35 +334,19 @@ button:hover{opacity:.85}
     <div id="nwsContent" style="color:var(--text-muted);font-size:13px;padding:8px 0">Fetching weather…</div>
   </div>
 
-  <!-- WEATHER STATION -->
+  <!-- CURRENT CONDITIONS (NWS) -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Our Weather Station</span>
-      <span class="badge badge-blue">Ambient WX</span>
+      <span class="card-title">Current Conditions</span>
+      <span class="badge badge-live">● NWS</span>
     </div>
     <div class="st-grid">
       <div class="st-box"><div class="st-label">Temp</div><div class="st-val" id="st-temp">--°F</div><div class="st-sub" id="st-temp-sub">—</div></div>
       <div class="st-box"><div class="st-label">Humidity</div><div class="st-val" id="st-hum">--%</div><div class="st-sub">Relative</div></div>
       <div class="st-box"><div class="st-label">Wind</div><div class="st-val" id="st-wind">-- mph</div><div class="st-sub" id="st-wind-dir">—</div></div>
-      <div class="st-box"><div class="st-label">Rain Today</div><div class="st-val" id="st-rain">-- in</div><div class="st-sub">Accumulation</div></div>
+      <div class="st-box"><div class="st-label">Precip Chance</div><div class="st-val" id="st-rain">--%</div><div class="st-sub">Probability</div></div>
     </div>
-    <div style="margin-top:10px;padding:7px 10px;background:var(--blue-pale);border-radius:7px;font-size:11px;color:var(--blue)">
-      💡 Keys are saved in this browser automatically after connecting.
-    </div>
-    <div class="key-row"><label>API Key</label><input type="password" id="awApi" placeholder="Ambient API Key"><button class="btn-blue" onclick="connectStation()" style="white-space:nowrap">Connect</button></div>
-    <div class="key-row"><label>App Key</label><input type="password" id="awApp" placeholder="Application Key"></div>
-    <div style="display:flex;justify-content:flex-end;margin-top:4px"><button onclick="clearStationKeys()" style="font-size:10px;background:none;border:none;color:var(--text-muted);cursor:pointer;padding:0;text-decoration:underline">Clear saved keys</button></div>
-    <div class="st-status" id="stStatus"></div>
-    <div style="border-top:1px solid var(--border);margin-top:10px;padding-top:10px">
-      <div style="font-size:10px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Manual entry</div>
-      <div class="manual-row">
-        <input id="m-temp" placeholder="Temp °F">
-        <input id="m-hum"  placeholder="Hum %">
-        <input id="m-wind" placeholder="Wind mph">
-        <input id="m-rain" placeholder="Rain in">
-        <button class="btn-ghost" onclick="manualStation()">Update</button>
-      </div>
-    </div>
+    <div style="margin-top:8px;font-size:11px;color:var(--text-muted)" id="stStatus">Fetching from NWS…</div>
   </div>
 
   <!-- BULLETIN BOARD -->
@@ -649,6 +628,9 @@ async function fetchNWS(){
     const precip=cur.probabilityOfPrecipitation?.value;
     const days5=periods.filter(p=>p.isDaytime).slice(0,5);
 
+    // Update current conditions card
+    updateCurrentConditions(cur);
+
     // ── ALERT DETECTION ──────────────────────
     const frostAlerts=(al.features||[]).filter(f=>{
       const ev=(f.properties?.event||'').toLowerCase();
@@ -895,74 +877,22 @@ function clearGH(){
   document.getElementById('ghSlot').innerHTML='';
 }
 
-// ── AMBIENT WEATHER STATION ────────────────────────
-function deg2dir(d){return['N','NNE','NE','ENE','E','ESE','SE','SSE','S','SSW','SW','WSW','W','WNW','NW','NNW'][Math.round(d/22.5)%16]}
+// ── CURRENT CONDITIONS (from NWS hourly) ─────────
+function updateCurrentConditions(cur) {
+  if (!cur) return;
+  const temp = cur.temperature;
+  const wind = cur.windSpeed || '--';
+  const wdir = cur.windDirection || '--';
+  const hum = cur.relativeHumidity?.value;
+  const precip = cur.probabilityOfPrecipitation?.value;
 
-async function connectStation(){
-  const api=document.getElementById('awApi').value.trim(),app=document.getElementById('awApp').value.trim();
-  const st=document.getElementById('stStatus');
-  if(!api||!app){st.textContent='⚠ Enter both keys first.';return;}
-  st.textContent='Connecting…';
-  try{
-    const data=await(await fetch(`https://api.ambientweather.net/v1/devices?applicationKey=${app}&apiKey=${api}`)).json();
-    if(!Array.isArray(data)||!data.length){st.textContent='⚠ No devices found.';return;}
-    localStorage.setItem('kgAwApi',api);
-    localStorage.setItem('kgAwApp',app);
-    applyStation(data[0].lastData);
-    const ts=new Date(data[0].lastData.dateutc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-    st.textContent=`✓ Connected · last update ${ts} · keys saved`;
-    startStationRefresh(api,app);
-  }catch(e){st.textContent='⚠ Error: '+e.message;}
-}
-
-function startStationRefresh(api,app){
-  const st=document.getElementById('stStatus');
-  clearInterval(window._stInt);
-  window._stInt=setInterval(async()=>{
-    try{
-      const d2=await(await fetch(`https://api.ambientweather.net/v1/devices?applicationKey=${app}&apiKey=${api}`)).json();
-      if(Array.isArray(d2)&&d2.length){applyStation(d2[0].lastData);const ts2=new Date(d2[0].lastData.dateutc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});st.textContent=`✓ Connected · last update ${ts2}`;}
-    }catch(e){st.textContent='⚠ Refresh error: '+e.message;}
-  },5*60*1000);
-}
-
-function autoConnectStation(){
-  const api=localStorage.getItem('kgAwApi'),app=localStorage.getItem('kgAwApp');
-  if(!api||!app)return;
-  document.getElementById('awApi').value=api;
-  document.getElementById('awApp').value=app;
-  const st=document.getElementById('stStatus');
-  st.textContent='Auto-connecting with saved keys…';
-  fetch(`https://api.ambientweather.net/v1/devices?applicationKey=${app}&apiKey=${api}`)
-    .then(r=>r.json())
-    .then(data=>{
-      if(!Array.isArray(data)||!data.length){st.textContent='⚠ No devices found.';return;}
-      applyStation(data[0].lastData);
-      const ts=new Date(data[0].lastData.dateutc).toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
-      st.textContent=`✓ Auto-connected · last update ${ts}`;
-      startStationRefresh(api,app);
-    })
-    .catch(e=>{st.textContent='⚠ Auto-connect failed: '+e.message;});
-}
-
-function clearStationKeys(){
-  localStorage.removeItem('kgAwApi');
-  localStorage.removeItem('kgAwApp');
-  document.getElementById('awApi').value='';
-  document.getElementById('awApp').value='';
-  document.getElementById('stStatus').textContent='Keys cleared. Enter new keys to reconnect.';
-  clearInterval(window._stInt);
-}
-
-function applyStation(d){setStation(d.tempf??null,d.humidity??null,d.windspeedmph??null,d.winddir!=null?deg2dir(d.winddir):null,d.dailyrainin??null)}
-
-function setStation(t,h,w,wd,r){
-  document.getElementById('st-temp').textContent=t!=null?Math.round(t)+'°F':'--°F';
-  document.getElementById('st-temp-sub').textContent=t!=null?(t<=32?'⚠️ At/below freezing':t<=36?'⚠️ Frost risk':'Normal'):'—';
-  document.getElementById('st-hum').textContent=h!=null?Math.round(h)+'%':'--%';
-  document.getElementById('st-wind').textContent=w!=null?Math.round(w)+' mph':'-- mph';
-  document.getElementById('st-wind-dir').textContent=wd||'—';
-  document.getElementById('st-rain').textContent=r!=null?r.toFixed(2)+' in':'-- in';
+  document.getElementById('st-temp').textContent = temp != null ? Math.round(temp) + '°F' : '--°F';
+  document.getElementById('st-temp-sub').textContent = temp != null ? (temp <= 32 ? '⚠️ At/below freezing' : temp <= 36 ? '⚠️ Frost risk' : 'Normal') : '—';
+  document.getElementById('st-hum').textContent = hum != null ? Math.round(hum) + '%' : '--%';
+  document.getElementById('st-wind').textContent = wind + ' ' + wdir;
+  document.getElementById('st-wind-dir').textContent = wdir;
+  document.getElementById('st-rain').textContent = precip != null ? precip + '%' : '--%';
+  document.getElementById('stStatus').textContent = 'NWS hourly · updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
 }
 
 function manualStation(){
@@ -1347,7 +1277,6 @@ function renderGDD(){
 // ── INIT ──────────────────────────────────────────
 fetchNWS();
 fetchGDD();
-autoConnectStation();
 renderCal();
 setInterval(fetchNWS,15*60*1000);
 setInterval(fetchGDD,60*60*1000);
