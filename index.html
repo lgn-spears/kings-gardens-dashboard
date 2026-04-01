@@ -23,22 +23,22 @@
 html,body{font-family:var(--font);background:var(--surface);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
 
 /* HEADER */
-.header{background:var(--white);border-bottom:1.5px solid var(--border);padding:12px 24px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
-.header-left{display:flex;align-items:center;gap:12px}
-.logo-mark{width:40px;height:40px;background:var(--green);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
-.header-title{font-size:20px;font-weight:600;letter-spacing:-.3px}
-.header-sub{font-size:12px;color:var(--text-muted)}
-.clock{font-family:var(--mono);font-size:24px;font-weight:500;color:var(--green);letter-spacing:1px}
-.date-line{font-size:12px;color:var(--text-mid);margin-top:1px;text-align:right}
+.header{background:var(--white);border-bottom:1.5px solid var(--border);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:10}
+.header-left{display:flex;align-items:center;gap:10px}
+.logo-mark{width:36px;height:36px;background:var(--green);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.header-title{font-size:18px;font-weight:600;letter-spacing:-.3px}
+.header-sub{font-size:11px;color:var(--text-muted)}
+.clock{font-family:var(--mono);font-size:20px;font-weight:500;color:var(--green);letter-spacing:1px}
+.date-line{font-size:11px;color:var(--text-mid);margin-top:1px;text-align:right}
 
 /* GRID */
-.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;padding:16px 20px;max-width:1600px;margin:0 auto}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;padding:14px 18px;max-width:1600px;margin:0 auto}
 .span2{grid-column:span 2}
 .span3{grid-column:span 3}
 
 /* CARD */
-.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:16px 18px;box-shadow:0 1px 4px rgba(30,60,40,.06)}
-.card-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:10px;margin-bottom:12px;border-bottom:1px solid var(--border)}
+.card{background:var(--white);border:1px solid var(--border);border-radius:14px;padding:14px 16px;box-shadow:0 1px 4px rgba(30,60,40,.06)}
+.card-header{display:flex;align-items:center;justify-content:space-between;padding-bottom:8px;margin-bottom:10px;border-bottom:1px solid var(--border)}
 .card-title{font-size:10px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--text-muted)}
 .badge{font-size:10px;font-weight:600;padding:2px 9px;border-radius:20px;white-space:nowrap}
 .badge-live{background:var(--green-pale);color:var(--green)}
@@ -107,8 +107,8 @@ button:hover{opacity:.85}
 .stat-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
 .stat-val{font-size:17px;font-weight:500;margin-top:2px}
 .stat-sub{font-size:11px;color:var(--text-mid);margin-top:1px}
-.forecast-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px}
-.fc-day{flex:1;min-width:50px;background:var(--surface);border-radius:8px;padding:6px 4px;text-align:center}
+.forecast-strip{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;-webkit-overflow-scrolling:touch}
+.fc-day{flex:1;min-width:52px;background:var(--surface);border-radius:8px;padding:6px 4px;text-align:center}
 .fc-name{font-size:9px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px}
 .fc-icon{font-size:18px;margin:3px 0;line-height:1}
 .fc-hi{font-size:13px;font-weight:500}
@@ -123,8 +123,8 @@ button:hover{opacity:.85}
 .wc-advisory{margin-top:8px;font-size:11px;color:var(--text-muted);background:var(--surface);border-radius:6px;padding:5px 9px;min-height:18px}
 
 /* WEEK PLANNING CARD */
-.week-grid{display:flex;gap:6px;margin-top:2px}
-.week-day{flex:1;min-width:0;background:var(--surface);border-radius:9px;padding:8px 4px;text-align:center}
+.week-grid{display:flex;gap:6px;margin-top:2px;overflow-x:auto;padding-bottom:2px}
+.week-day{flex:1;min-width:54px;background:var(--surface);border-radius:9px;padding:8px 4px;text-align:center}
 .week-day-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
 .week-icon{font-size:18px;margin:4px 0 2px;line-height:1}
 .week-hi{font-size:13px;font-weight:500;margin-bottom:4px}
@@ -139,7 +139,7 @@ button:hover{opacity:.85}
 .cal-nav-btn{width:24px;height:24px;border:1px solid var(--border);background:var(--surface);border-radius:6px;font-size:14px;display:flex;align-items:center;justify-content:center;color:var(--text-mid);padding:0;cursor:pointer}
 .cal-nav-btn:hover{background:var(--green-pale)}
 .cal-month-lbl{font-size:13px;font-weight:600}
-.cal-grid{display:grid;grid-template-columns:repeat(7,28px);gap:2px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,28px);gap:2px;width:fit-content}
 .cal-dow{font-size:9px;font-weight:700;text-align:center;color:var(--text-muted);text-transform:uppercase;padding:2px 0}
 .cal-day{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--text-mid);cursor:pointer;position:relative;user-select:none}
 .cal-day:hover{background:var(--green-pale)}
@@ -167,9 +167,12 @@ button:hover{opacity:.85}
 
 
 /* GDD CARD */
-.gdd-hero{display:flex;align-items:flex-end;gap:6px;margin-bottom:14px}
-.gdd-number{font-size:52px;font-weight:300;line-height:1;letter-spacing:-2px;color:var(--text)}
-.gdd-unit{font-size:16px;color:var(--text-muted);margin-bottom:8px}
+.gdd-inner{display:flex;gap:20px;align-items:flex-start}
+.gdd-left{flex:1;min-width:0}
+.gdd-right{flex:1;min-width:0}
+.gdd-hero{display:flex;align-items:flex-end;gap:6px;margin-bottom:12px}
+.gdd-number{font-size:48px;font-weight:300;line-height:1;letter-spacing:-2px;color:var(--text)}
+.gdd-unit{font-size:15px;color:var(--text-muted);margin-bottom:8px}
 .gdd-label{font-size:12px;color:var(--text-muted);margin-bottom:8px;padding-left:2px}
 .gdd-bases{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
 .gdd-base-btn{padding:6px 0;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer;border:1.5px solid var(--border);background:var(--surface);color:var(--text-muted);transition:all .15s;text-align:center}
@@ -179,7 +182,7 @@ button:hover{opacity:.85}
 .gdd-bar-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text-muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.5px}
 .gdd-bar-track{height:8px;background:var(--surface);border-radius:20px;border:1px solid var(--border);overflow:hidden}
 .gdd-bar-fill{height:100%;border-radius:20px;background:linear-gradient(90deg,var(--green-mid),var(--green));transition:width .6s ease}
-.gdd-milestones{display:flex;flex-direction:column;gap:5px}
+.gdd-milestones{display:flex;flex-direction:column;gap:5px;overflow-y:auto;max-height:260px}
 .gdd-milestone{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 8px;border-radius:7px;background:var(--surface)}
 .gdd-ms-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--border)}
 .gdd-ms-name{flex:1;color:var(--text-mid)}
@@ -204,30 +207,83 @@ button:hover{opacity:.85}
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:10px}
 
 @media(max-width:1000px){
-  .grid{grid-template-columns:1fr 1fr}
+  .grid{grid-template-columns:1fr 1fr;gap:10px;padding:12px 14px}
   .span3,.alert-card,.comment-card,.gh-card{grid-column:span 2}
+  /* Bulletin board exits tall-column mode at tablet */
+  .bulletin-tall{grid-column:span 2;grid-row:span 1;min-height:0}
+  .bulletin-tall .bulletin-feed{flex:none;max-height:220px}
 }
 @media(max-width:640px){
-  .grid{grid-template-columns:1fr;padding:10px 12px;gap:12px}
+  .grid{grid-template-columns:1fr;padding:10px 10px;gap:10px}
   .span2,.span3,.alert-card,.comment-card,.gh-card{grid-column:span 1}
-  .cal-wrap,.alert-top,.gh-top{flex-direction:column}
-  .header{padding:10px 14px;flex-direction:column;gap:8px;text-align:center}
+  /* Header compact on mobile */
+  .header{padding:8px 12px;flex-direction:column;gap:6px;text-align:center}
   .header-left{justify-content:center}
-  .user-badge{text-align:center}
-  .clock{text-align:center}
+  .logo-mark{width:32px;height:32px;font-size:18px}
+  .header-title{font-size:16px}
+  .clock{font-size:18px;text-align:center}
   .date-line{text-align:center}
+  .user-badge{text-align:center}
+  /* Calendar stacks */
+  .cal-wrap{flex-direction:column}
+  .cal-left{width:100%}
+  .cal-grid{grid-template-columns:repeat(7,1fr);width:100%}
+  .cal-day{width:auto;height:32px;border-radius:5px}
+  /* Alert / GH stacking */
+  .alert-top,.gh-top{flex-direction:column;gap:10px}
+  .alert-icon-big,.gh-icon{font-size:28px}
+  .alert-event{font-size:18px}
+  .gh-headline{font-size:20px}
+  .alert-low-pill{align-self:flex-start}
+  .alert-low-temp{font-size:26px}
+  /* Bulletin board mobile */
   .bulletin-tall{grid-column:span 1;grid-row:span 1}
-  .bulletin-tall .bulletin-feed{max-height:200px}
-  .bulletin-feed{max-height:200px}
-  .sched-table th:first-child,.sched-table td:first-child{min-width:90px}
-  .sched-actions{flex-direction:column}
-  .sched-actions input[type="text"]{width:100%}
+  .bulletin-tall .bulletin-feed{max-height:180px}
+  .bulletin-feed{max-height:180px}
+  /* Schedule */
+  .sched-table th:first-child,.sched-table td:first-child{min-width:80px}
+  .sched-actions{flex-direction:column;gap:8px}
+  .sched-actions input,.sched-actions select{width:100%}
+  /* Calendar add form */
   .event-add{flex-direction:column}
-  .event-add input,.event-add select{width:100%}
-  .gdd-bases{grid-template-columns:1fr}
+  .event-add input,.event-add select,.event-add button{width:100%}
+  /* GDD card: stack left/right columns */
+  .gdd-inner{flex-direction:column;gap:12px}
+  .gdd-bases{grid-template-columns:repeat(3,1fr)}
+  .gdd-reset-row{flex-wrap:wrap}
+  .gdd-reset-row input[type="date"]{flex:1;min-width:120px}
+  /* Work conditions: 2 cols on mobile */
+  .wc-grid{grid-template-columns:1fr 1fr !important}
+  /* Week planning: scrollable strip */
+  .week-grid{gap:4px}
+  .week-day{min-width:48px}
+  /* Touch targets */
   button,.btn-green,.btn-blue,.btn-ghost{min-height:44px}
   input,textarea,select{min-height:44px;font-size:16px}
-  .auth-box{margin:16px;padding:24px 20px}
+  /* Auth */
+  .auth-box{margin:12px;padding:20px 16px}
+  /* Comment card */
+  .comment-input-row{flex-direction:column}
+  .comment-input-row button{align-self:flex-end;height:44px}
+  .comment-list{max-height:160px}
+  /* Event list */
+  .event-list{max-height:120px}
+  /* Forecast strip */
+  .forecast-strip{gap:4px}
+  .fc-day{min-width:44px}
+}
+
+@media(max-width:400px){
+  .grid{padding:8px 8px;gap:8px}
+  .card{padding:12px 12px}
+  .gdd-bases{grid-template-columns:1fr 1fr}
+  .gdd-number{font-size:40px}
+  .wx-temp{font-size:44px}
+  .wc-grid{grid-template-columns:1fr !important}
+  .week-day{min-width:44px}
+  .fc-day{min-width:40px}
+  .header-title{font-size:15px}
+  .clock{font-size:16px}
 }
 
 /* AUTH OVERLAY */
@@ -255,11 +311,11 @@ button:hover{opacity:.85}
 .user-badge a:hover{color:var(--red)}
 
 /* BULLETIN BOARD */
-.bulletin-tall{grid-column:3;grid-row:span 3;display:flex;flex-direction:column}
-.bulletin-tall .bulletin-feed{flex:1;max-height:none}
+.bulletin-tall{grid-column:3;grid-row:span 3;display:flex;flex-direction:column;min-height:0}
+.bulletin-tall .bulletin-feed{flex:1;max-height:none;min-height:120px}
 .bulletin-tall .card-header{flex-shrink:0}
-.bulletin-tall .bulletin-compose{flex-shrink:0}
-.bulletin-feed{display:flex;flex-direction:column;gap:8px;max-height:300px;overflow-y:auto;margin-bottom:10px}
+.bulletin-tall .bulletin-compose{flex-shrink:0;margin-bottom:8px}
+.bulletin-feed{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;margin-bottom:8px}
 .bulletin-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px}
 .bulletin-meta{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
 .bulletin-author{font-weight:600;color:var(--green);font-size:13px}
@@ -358,12 +414,12 @@ button:hover{opacity:.85}
       <span class="card-title">Team Bulletin Board</span>
       <span class="badge badge-live">● Live</span>
     </div>
+    <div class="bulletin-feed" id="bulletinFeed">
+      <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading messages…</div>
+    </div>
     <div class="bulletin-compose">
       <textarea id="bulletinInput" placeholder="Post an update for the team…"></textarea>
       <button class="btn-green" onclick="postBulletin()" style="white-space:nowrap;align-self:flex-end;height:50px">Post</button>
-    </div>
-    <div class="bulletin-feed" id="bulletinFeed">
-      <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading messages…</div>
     </div>
   </div>
 
@@ -437,8 +493,8 @@ button:hover{opacity:.85}
       <span class="card-title">Growing Degree Days</span>
       <span class="badge badge-live" id="gddBadge">Loading…</span>
     </div>
-    <div style="display:flex;gap:24px;align-items:flex-start">
-      <div style="flex:1">
+    <div class="gdd-inner">
+      <div class="gdd-left">
         <div class="gdd-hero">
           <div class="gdd-number" id="gddTotal">--</div>
           <div><div class="gdd-unit">GDD</div><div class="gdd-label" id="gddSince">since Jan 1</div></div>
@@ -452,7 +508,7 @@ button:hover{opacity:.85}
           <div class="gdd-bar-label"><span>Season progress</span><span id="gddPct">0%</span></div>
           <div class="gdd-bar-track"><div class="gdd-bar-fill" id="gddBar" style="width:0%"></div></div>
         </div>
-        <div style="display:flex;gap:16px;margin-bottom:8px">
+        <div style="display:flex;gap:10px;margin-bottom:8px">
           <div style="background:var(--surface);border-radius:8px;padding:8px 10px;flex:1">
             <div style="font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)"><span id="gddYearLabel">--</span> Total</div>
             <div style="font-size:17px;font-weight:500;margin-top:2px" id="gddPriorTotal">--</div>
@@ -465,7 +521,7 @@ button:hover{opacity:.85}
         </div>
         <div class="gdd-status" id="gddStatus"></div>
       </div>
-      <div style="flex:1">
+      <div class="gdd-right">
         <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px">Phenology Milestones</div>
         <div class="gdd-milestones" id="gddMilestones"></div>
       </div>
