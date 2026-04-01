@@ -311,8 +311,8 @@ button:hover{opacity:.85}
 .user-badge a:hover{color:var(--red)}
 
 /* BULLETIN BOARD */
-.bulletin-tall{grid-column:3;grid-row:span 3;display:flex;flex-direction:column;min-height:0}
-.bulletin-tall .bulletin-feed{flex:1;max-height:none;min-height:120px}
+.bulletin-tall{grid-row:span 3;display:flex;flex-direction:column;min-height:0}
+.bulletin-tall .bulletin-feed{flex:1;max-height:none;min-height:120px;overflow-y:auto}
 .bulletin-tall .card-header{flex-shrink:0}
 .bulletin-tall .bulletin-compose{flex-shrink:0;margin-bottom:8px}
 .bulletin-feed{display:flex;flex-direction:column;gap:7px;max-height:280px;overflow-y:auto;margin-bottom:8px}
