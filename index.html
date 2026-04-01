@@ -187,6 +187,9 @@ button:hover{opacity:.85}
 .gdd-ms-reached{background:var(--green-pale)}
 .gdd-ms-reached .gdd-ms-name{color:var(--green);font-weight:500}
 .gdd-ms-reached .gdd-ms-dot{background:var(--green-mid)}
+.gdd-ms-next{background:#fef9e7;border:1.5px solid #e9c46a;border-radius:8px}
+.gdd-ms-next .gdd-ms-name{color:#856404;font-weight:600}
+.gdd-ms-next .gdd-ms-dot{background:#e9c46a}
 .gdd-reset-row{display:flex;gap:8px;align-items:center;margin-top:10px;padding-top:10px;border-top:1px solid var(--border)}
 .gdd-reset-row label{font-size:11px;color:var(--text-muted);white-space:nowrap}
 .gdd-status{font-size:11px;color:var(--text-muted);margin-top:6px;min-height:14px}
@@ -1363,30 +1366,38 @@ let gddBase=50, gddData=[], gddPriorData=[];
 
 const GDD_MILESTONES={
   50:[
-    {gdd:50,  icon:'🌸',name:'Forsythia first bloom'},
-    {gdd:100, icon:'🌸',name:'Forsythia peak bloom'},
-    {gdd:200, icon:'🌷',name:'Tulip & daffodil peak'},
-    {gdd:350, icon:'🍎',name:'Crabapple bloom'},
-    {gdd:500, icon:'🌿',name:'Lilac full bloom'},
-    {gdd:700, icon:'🌹',name:'Rose first flush'},
-    {gdd:1000,icon:'🦟',name:'Japanese beetle emergence'},
-    {gdd:1350,icon:'🌻',name:'Coneflower / rudbeckia bloom'},
+    {gdd:50,  icon:'🌸',name:'Forsythia first bloom', action:'Scout for winter damage, plan spring cleanup'},
+    {gdd:100, icon:'🌸',name:'Forsythia peak bloom', action:'Apply crabgrass pre-emergent NOW'},
+    {gdd:150, icon:'🧹',name:'Pre-emergent window closing', action:'Last chance for crabgrass preventer'},
+    {gdd:200, icon:'🌷',name:'Tulip & daffodil peak', action:'Begin spring mulching'},
+    {gdd:350, icon:'🍎',name:'Crabapple bloom', action:'Monitor for apple scab, begin fungicide if needed'},
+    {gdd:500, icon:'🌿',name:'Lilac full bloom', action:'Safe to plant warm-season annuals'},
+    {gdd:600, icon:'🐛',name:'Bagworm egg hatch', action:'Apply Bt or spinosad for bagworm control'},
+    {gdd:700, icon:'🌹',name:'Rose first flush', action:'Begin regular disease scouting'},
+    {gdd:900, icon:'🪲',name:'Japanese beetle watch', action:'Set traps, begin neem/milky spore treatment'},
+    {gdd:1000,icon:'🦟',name:'Japanese beetle peak', action:'Hand-pick or treat, protect roses & lindens'},
+    {gdd:1350,icon:'🌻',name:'Coneflower / rudbeckia bloom', action:'Deadhead spent flowers for rebloom'},
+    {gdd:1800,icon:'🍂',name:'Fall aeration window', action:'Core aerate, overseed cool-season lawns'},
+    {gdd:2200,icon:'🌱',name:'Fall fertilization', action:'Apply winterizer fertilizer to lawns'},
   ],
   40:[
-    {gdd:150, icon:'🌱',name:'Cool-season seed germination'},
-    {gdd:300, icon:'🥬',name:'Lettuce / spinach transplant'},
-    {gdd:600, icon:'🌸',name:'Pansy peak color'},
-    {gdd:900, icon:'🌿',name:'Perennial ground cover est.'},
-    {gdd:1400,icon:'🌻',name:'Warm-season planting safe'},
-    {gdd:2000,icon:'🍂',name:'Fall planting window opens'},
+    {gdd:100, icon:'🌱',name:'Soil thawing', action:'Begin early spring cleanup & debris removal'},
+    {gdd:150, icon:'🌱',name:'Cool-season seed germination', action:'Overseed bare lawn patches'},
+    {gdd:300, icon:'🥬',name:'Lettuce / spinach transplant', action:'Set out cool-season vegetables'},
+    {gdd:500, icon:'🧪',name:'Soil test window', action:'Pull soil samples before fertilizing'},
+    {gdd:600, icon:'🌸',name:'Pansy peak color', action:'Install spring annuals'},
+    {gdd:900, icon:'🌿',name:'Perennial ground cover est.', action:'Divide & transplant overgrown perennials'},
+    {gdd:1200,icon:'💧',name:'Irrigation check', action:'Audit irrigation system, adjust heads'},
+    {gdd:1400,icon:'🌻',name:'Warm-season planting safe', action:'All tender plants safe to install'},
+    {gdd:2000,icon:'🍂',name:'Fall planting window', action:'Best time to plant trees & shrubs'},
   ],
   32:[
-    {gdd:200, icon:'🌱',name:'Soil workable — early seeding'},
-    {gdd:500, icon:'🌸',name:'Early spring bloomers peak'},
-    {gdd:1000,icon:'🌿',name:'Full canopy leaf-out'},
-    {gdd:1800,icon:'🌻',name:'Mid-summer annuals peak'},
-    {gdd:2800,icon:'🍂',name:'First fall color'},
-    {gdd:3500,icon:'❄️', name:'Hardening off / dormancy'},
+    {gdd:200, icon:'🌱',name:'Soil workable — early seeding', action:'Begin earliest outdoor planting'},
+    {gdd:500, icon:'🌸',name:'Early spring bloomers peak', action:'Document bloom times for client reports'},
+    {gdd:1000,icon:'🌿',name:'Full canopy leaf-out', action:'Prune spring-flowering shrubs after bloom'},
+    {gdd:1800,icon:'🌻',name:'Mid-summer annuals peak', action:'Increase watering frequency'},
+    {gdd:2800,icon:'🍂',name:'First fall color', action:'Begin fall cleanup planning'},
+    {gdd:3500,icon:'❄️', name:'Hardening off / dormancy', action:'Final pruning, winterize irrigation'},
   ]
 };
 const GDD_MAX={50:2500,40:3500,32:5000};
@@ -1465,10 +1476,44 @@ function renderGDD(){
     deltaEl.textContent=(diff>=0?'+':'')+diff;
     deltaEl.style.color=diff>0?'var(--green)':diff<0?'var(--red)':'var(--text-muted)';
   }else{priorEl.textContent='--';deltaEl.textContent='';}
+  // Estimate daily GDD rate from last 14 days for ETA calculation
+  const recentDays = gddData.slice(-14);
+  const dailyRate = recentDays.length >= 2
+    ? (recentDays[recentDays.length-1].total - recentDays[0].total) / recentDays.length
+    : 0;
+
+  const milestones = GDD_MILESTONES[gddBase] || [];
+  const nextMilestone = milestones.find(m => thisTotal < m.gdd);
+
   const el=document.getElementById('gddMilestones');
-  el.innerHTML=(GDD_MILESTONES[gddBase]||[]).map(m=>{
-    const reached=thisTotal>=m.gdd,remaining=m.gdd-thisTotal,priorReach=priorTotal!=null&&priorTotal>=m.gdd;
-    return `<div class="gdd-milestone${reached?' gdd-ms-reached':''}"><span class="gdd-ms-dot${reached?'':' gdd-ms-dot-pending'}"></span><span style="font-size:14px;line-height:1">${m.icon}</span><span class="gdd-ms-name">${m.name}</span><span class="gdd-ms-val">${reached?'✓ '+m.gdd:remaining+' to go'}</span>${priorTotal!=null?`<span style="font-size:10px;color:var(--text-muted);margin-left:2px">${priorReach?'(✓ last yr)':''}</span>`:''}</div>`;
+  el.innerHTML=milestones.map(m=>{
+    const reached = thisTotal >= m.gdd;
+    const remaining = m.gdd - thisTotal;
+    const priorReach = priorTotal != null && priorTotal >= m.gdd;
+    const isNext = nextMilestone && m.gdd === nextMilestone.gdd;
+
+    // Estimate days until this milestone
+    let etaStr = '';
+    if (!reached && dailyRate > 0) {
+      const daysAway = Math.round(remaining / dailyRate);
+      if (daysAway <= 7) etaStr = '~' + daysAway + ' days';
+      else if (daysAway <= 30) etaStr = '~' + Math.round(daysAway / 7) + ' weeks';
+      else etaStr = '~' + Math.round(daysAway / 30) + ' months';
+    }
+
+    return '<div class="gdd-milestone' + (reached ? ' gdd-ms-reached' : '') + (isNext ? ' gdd-ms-next' : '') + '">' +
+      '<span class="gdd-ms-dot' + (reached ? '' : ' gdd-ms-dot-pending') + '"></span>' +
+      '<span style="font-size:14px;line-height:1">' + m.icon + '</span>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div class="gdd-ms-name">' + m.name + '</div>' +
+        (m.action ? '<div style="font-size:10px;color:' + (reached ? 'var(--green)' : isNext ? '#856404' : 'var(--text-muted)') + ';line-height:1.3;margin-top:1px">' + m.action + '</div>' : '') +
+      '</div>' +
+      '<div style="text-align:right;flex-shrink:0">' +
+        '<span class="gdd-ms-val">' + (reached ? '✓ ' + m.gdd : remaining + ' to go') + '</span>' +
+        (etaStr ? '<div style="font-size:9px;color:var(--text-muted)">' + etaStr + '</div>' : '') +
+        (priorTotal != null && priorReach ? '<div style="font-size:9px;color:var(--text-muted)">(✓ last yr)</div>' : '') +
+      '</div>' +
+    '</div>';
   }).join('');
 }
 
