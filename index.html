@@ -625,7 +625,7 @@ function tick(){
 setInterval(tick,1000); tick();
 
 // ── NWS WEATHER ────────────────────────────────────
-const LAT=38.0406,LON=-84.5037,UA='KingsGardensDashboard/1.0';
+const LAT=37.968,LON=-84.533,UA='KingsGardensDashboard/1.0';
 const ICONS={'Sunny':'☀️','Clear':'☀️','Partly Cloudy':'⛅','Mostly Cloudy':'🌥️','Cloudy':'☁️','Overcast':'☁️','Rain':'🌧️','Showers':'🌦️','Thunderstorm':'⛈️','Snow':'❄️','Sleet':'🌨️','Fog':'🌫️','Windy':'💨'};
 function wxIcon(t){for(const[k,v]of Object.entries(ICONS))if(t.includes(k))return v;return'🌡️'}
 
@@ -1271,7 +1271,7 @@ function setGDDBase(base){
 
 function openMeteoUrl(start,end){
   return 'https://archive-api.open-meteo.com/v1/archive'
-    +'?latitude=38.0406&longitude=-84.5037'
+    +'?latitude=37.968&longitude=-84.533'
     +'&start_date='+start+'&end_date='+end
     +'&daily=temperature_2m_max,temperature_2m_min'
     +'&temperature_unit=fahrenheit&timezone=America%2FNew_York';
