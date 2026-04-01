@@ -370,11 +370,13 @@ button:hover{opacity:.85}
       <span class="card-title">Outdoor Work Conditions</span>
       <span class="badge badge-live">● NWS</span>
     </div>
-    <div class="wc-grid">
+    <div class="wc-grid" style="grid-template-columns:repeat(3,1fr)">
       <div class="wc-box"><div class="wc-label">Heat Index</div><div class="wc-val" id="wc-heat">--°F</div><div class="wc-sub" id="wc-heat-sub">—</div></div>
+      <div class="wc-box"><div class="wc-label">UV Index</div><div class="wc-val" id="wc-uv">--</div><div class="wc-sub" id="wc-uv-sub">—</div></div>
       <div class="wc-box"><div class="wc-label">Rain in Next 24h</div><div class="wc-val" id="wc-rain">--</div><div class="wc-sub" id="wc-rain-sub">—</div></div>
       <div class="wc-box"><div class="wc-label">Spray Window</div><div class="wc-val" id="wc-spray">--</div><div class="wc-sub" id="wc-spray-sub">wind &lt;10mph, precip &lt;20%</div></div>
       <div class="wc-box"><div class="wc-label">Soil Moisture Est.</div><div class="wc-val" id="wc-soil">--</div><div class="wc-sub" id="wc-soil-sub">recent precip estimate</div></div>
+      <div class="wc-box"><div class="wc-label">Daylight Left</div><div class="wc-val" id="wc-daylight">--</div><div class="wc-sub" id="wc-daylight-sub">—</div></div>
     </div>
     <div class="wc-advisory" id="wc-advisory">Fetching from NWS…</div>
   </div>
@@ -990,6 +992,54 @@ function updateWorkConditions(cur, hrPeriods) {
   else if (avgPrecip >= 25) { soilText = 'Moderate'; soilSub = 'check before watering'; }
   document.getElementById('wc-soil').textContent = soilText;
   document.getElementById('wc-soil-sub').textContent = soilSub;
+
+  // UV index estimate (based on time of day, cloud cover, and season)
+  const now = new Date();
+  const hour = now.getHours();
+  const month = now.getMonth(); // 0-11
+  const forecast = (cur.shortForecast || '').toLowerCase();
+  let uvBase = 0;
+  // Peak UV by month for ~38°N latitude (Kentucky)
+  const monthUV = [2, 3, 5, 7, 9, 10, 10, 9, 7, 5, 3, 2];
+  if (hour >= 6 && hour <= 19) {
+    // Scale UV by time of day (peak at solar noon ~1pm)
+    const peakHour = 13;
+    const hourFactor = Math.max(0, 1 - Math.abs(hour - peakHour) / 7);
+    uvBase = Math.round(monthUV[month] * hourFactor);
+  }
+  // Reduce for cloud cover
+  if (forecast.includes('cloudy') || forecast.includes('overcast')) uvBase = Math.round(uvBase * 0.5);
+  else if (forecast.includes('partly')) uvBase = Math.round(uvBase * 0.75);
+  const uvEl = document.getElementById('wc-uv');
+  const uvSubEl = document.getElementById('wc-uv-sub');
+  uvEl.textContent = uvBase;
+  if (uvBase >= 8) { uvSubEl.textContent = '⚠️ Very high — sunscreen + shade'; }
+  else if (uvBase >= 6) { uvSubEl.textContent = 'High — wear sunscreen'; }
+  else if (uvBase >= 3) { uvSubEl.textContent = 'Moderate'; }
+  else { uvSubEl.textContent = 'Low'; }
+
+  // Daylight remaining (approximate sunrise/sunset for ~38°N)
+  const dayOfYear = Math.floor((now - new Date(now.getFullYear(), 0, 0)) / 86400000);
+  const daylightHours = 12 + 2.4 * Math.sin((2 * Math.PI / 365) * (dayOfYear - 80));
+  const sunriseHour = 12 - daylightHours / 2;
+  const sunsetHour = 12 + daylightHours / 2;
+  const sunsetTime = new Date(now); sunsetTime.setHours(Math.floor(sunsetHour), Math.round((sunsetHour % 1) * 60), 0);
+  const dlEl = document.getElementById('wc-daylight');
+  const dlSubEl = document.getElementById('wc-daylight-sub');
+  if (hour >= sunsetHour) {
+    dlEl.textContent = 'After dark';
+    dlSubEl.textContent = 'sunset has passed';
+  } else if (hour < sunriseHour) {
+    const minsToSunrise = Math.round((sunriseHour - hour) * 60);
+    dlEl.textContent = Math.floor(minsToSunrise / 60) + 'h ' + (minsToSunrise % 60) + 'm';
+    dlSubEl.textContent = 'until sunrise';
+  } else {
+    const minsLeft = Math.round((sunsetHour - hour - (now.getMinutes() / 60)) * 60);
+    const hrsLeft = Math.floor(minsLeft / 60);
+    const mLeft = minsLeft % 60;
+    dlEl.textContent = hrsLeft + 'h ' + mLeft + 'm';
+    dlSubEl.textContent = 'sunset ~' + sunsetTime.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
 
   // Advisory line
   let advisory = '';
