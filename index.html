@@ -114,13 +114,22 @@ button:hover{opacity:.85}
 .fc-hi{font-size:13px;font-weight:500}
 .fc-cond{font-size:10px;color:var(--text-muted);margin-top:1px}
 
-/* STATION */
-.st-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.st-box{background:var(--blue-pale);border-radius:8px;padding:9px 11px}
-.st-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--blue)}
-.st-val{font-size:20px;font-weight:500;color:#1d3557;margin-top:2px}
-.st-sub{font-size:11px;color:#457b9d;margin-top:1px}
-.st-status{font-size:11px;color:var(--text-muted);margin-top:5px;min-height:16px}
+/* WORK CONDITIONS CARD */
+.wc-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.wc-box{background:var(--surface);border-radius:8px;padding:9px 11px}
+.wc-label{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
+.wc-val{font-size:16px;font-weight:500;color:var(--text);margin-top:2px;line-height:1.25}
+.wc-sub{font-size:11px;color:var(--text-mid);margin-top:1px}
+.wc-advisory{margin-top:8px;font-size:11px;color:var(--text-muted);background:var(--surface);border-radius:6px;padding:5px 9px;min-height:18px}
+
+/* WEEK PLANNING CARD */
+.week-grid{display:flex;gap:6px;margin-top:2px}
+.week-day{flex:1;min-width:0;background:var(--surface);border-radius:9px;padding:8px 4px;text-align:center}
+.week-day-name{font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--text-muted)}
+.week-icon{font-size:18px;margin:4px 0 2px;line-height:1}
+.week-hi{font-size:13px;font-weight:500;margin-bottom:4px}
+.week-dot{width:10px;height:10px;border-radius:50%;margin:0 auto 3px}
+.week-lbl{font-size:10px;font-weight:600;color:var(--text-muted)}
 
 
 /* CALENDAR */
@@ -334,19 +343,30 @@ button:hover{opacity:.85}
     <div id="nwsContent" style="color:var(--text-muted);font-size:13px;padding:8px 0">Fetching weather…</div>
   </div>
 
-  <!-- CURRENT CONDITIONS (NWS) -->
+  <!-- OUTDOOR WORK CONDITIONS -->
   <div class="card">
     <div class="card-header">
-      <span class="card-title">Current Conditions</span>
+      <span class="card-title">Outdoor Work Conditions</span>
       <span class="badge badge-live">● NWS</span>
     </div>
-    <div class="st-grid">
-      <div class="st-box"><div class="st-label">Temp</div><div class="st-val" id="st-temp">--°F</div><div class="st-sub" id="st-temp-sub">—</div></div>
-      <div class="st-box"><div class="st-label">Humidity</div><div class="st-val" id="st-hum">--%</div><div class="st-sub">Relative</div></div>
-      <div class="st-box"><div class="st-label">Wind</div><div class="st-val" id="st-wind">-- mph</div><div class="st-sub" id="st-wind-dir">—</div></div>
-      <div class="st-box"><div class="st-label">Precip Chance</div><div class="st-val" id="st-rain">--%</div><div class="st-sub">Probability</div></div>
+    <div class="wc-grid">
+      <div class="wc-box"><div class="wc-label">Heat Index</div><div class="wc-val" id="wc-heat">--°F</div><div class="wc-sub" id="wc-heat-sub">—</div></div>
+      <div class="wc-box"><div class="wc-label">Rain in Next 24h</div><div class="wc-val" id="wc-rain">--</div><div class="wc-sub" id="wc-rain-sub">—</div></div>
+      <div class="wc-box"><div class="wc-label">Spray Window</div><div class="wc-val" id="wc-spray">--</div><div class="wc-sub" id="wc-spray-sub">wind &lt;10mph, precip &lt;20%</div></div>
+      <div class="wc-box"><div class="wc-label">Soil Moisture Est.</div><div class="wc-val" id="wc-soil">--</div><div class="wc-sub" id="wc-soil-sub">recent precip estimate</div></div>
     </div>
-    <div style="margin-top:8px;font-size:11px;color:var(--text-muted)" id="stStatus">Fetching from NWS…</div>
+    <div class="wc-advisory" id="wc-advisory">Fetching from NWS…</div>
+  </div>
+
+  <!-- WEEK AHEAD PLANNING -->
+  <div class="card span2">
+    <div class="card-header">
+      <span class="card-title">Week Ahead Planning</span>
+      <span class="badge badge-live">● NWS</span>
+    </div>
+    <div class="week-grid" id="weekGrid">
+      <div style="font-size:12px;color:var(--text-muted);padding:8px 0">Loading forecast…</div>
+    </div>
   </div>
 
   <!-- BULLETIN BOARD -->
@@ -628,8 +648,9 @@ async function fetchNWS(){
     const precip=cur.probabilityOfPrecipitation?.value;
     const days5=periods.filter(p=>p.isDaytime).slice(0,5);
 
-    // Update current conditions card
-    updateCurrentConditions(cur);
+    // Update work conditions and week planning cards
+    updateWorkConditions(cur, hr.properties.periods);
+    updateWeekPlanning(days5);
 
     // ── ALERT DETECTION ──────────────────────
     const frostAlerts=(al.features||[]).filter(f=>{
@@ -877,29 +898,150 @@ function clearGH(){
   document.getElementById('ghSlot').innerHTML='';
 }
 
-// ── CURRENT CONDITIONS (from NWS hourly) ─────────
-function updateCurrentConditions(cur) {
+// ── OUTDOOR WORK CONDITIONS ───────────────────────
+function computeHeatIndex(tempF, rhPct) {
+  // Steadman formula — valid when temp >= 80°F and RH >= 40%
+  if (tempF == null) return null;
+  if (rhPct == null || tempF < 80 || rhPct < 40) return Math.round(tempF);
+  const T = tempF, R = rhPct;
+  const hi = -42.379 + 2.04901523*T + 10.14333127*R
+    - 0.22475541*T*R - 0.00683783*T*T - 0.05481717*R*R
+    + 0.00122874*T*T*R + 0.00085282*T*R*R - 0.00000199*T*T*R*R;
+  return Math.round(hi);
+}
+
+function updateWorkConditions(cur, hrPeriods) {
   if (!cur) return;
   const temp = cur.temperature;
-  const wind = cur.windSpeed || '--';
-  const wdir = cur.windDirection || '--';
   const hum = cur.relativeHumidity?.value;
-  const precip = cur.probabilityOfPrecipitation?.value;
+  const precip = cur.probabilityOfPrecipitation?.value ?? 0;
 
-  document.getElementById('st-temp').textContent = temp != null ? Math.round(temp) + '°F' : '--°F';
-  document.getElementById('st-temp-sub').textContent = temp != null ? (temp <= 32 ? '⚠️ At/below freezing' : temp <= 36 ? '⚠️ Frost risk' : 'Normal') : '—';
-  document.getElementById('st-hum').textContent = hum != null ? Math.round(hum) + '%' : '--%';
-  document.getElementById('st-wind').textContent = wind + ' ' + wdir;
-  document.getElementById('st-wind-dir').textContent = wdir;
-  document.getElementById('st-rain').textContent = precip != null ? precip + '%' : '--%';
-  document.getElementById('stStatus').textContent = 'NWS hourly · updated ' + new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  // Heat index
+  const hi = computeHeatIndex(temp, hum);
+  document.getElementById('wc-heat').textContent = hi != null ? hi + '°F' : '--°F';
+  let hiSub = '';
+  if (hi != null) {
+    if (hi >= 103) hiSub = '⚠️ Danger — limit exposure';
+    else if (hi >= 91) hiSub = '⚠️ High heat — hydrate often';
+    else if (hi >= 80) hiSub = 'Warm — take breaks';
+    else hiSub = 'Comfortable';
+  }
+  document.getElementById('wc-heat-sub').textContent = hiSub;
+
+  // Hours until next rain (>40% precip chance in next 24 hourly periods)
+  const next24 = (hrPeriods || []).slice(0, 24);
+  const rainHourIdx = next24.findIndex(p => (p.probabilityOfPrecipitation?.value ?? 0) > 40);
+  const rainEl = document.getElementById('wc-rain');
+  const rainSubEl = document.getElementById('wc-rain-sub');
+  if (rainHourIdx === 0) {
+    rainEl.textContent = 'Now';
+    rainSubEl.textContent = next24[0].probabilityOfPrecipitation?.value + '% chance';
+  } else if (rainHourIdx > 0) {
+    rainEl.textContent = '~' + rainHourIdx + 'h';
+    rainSubEl.textContent = next24[rainHourIdx].probabilityOfPrecipitation?.value + '% chance then';
+  } else {
+    rainEl.textContent = 'None';
+    rainSubEl.textContent = 'clear next 24h';
+  }
+
+  // Spray window — next 12 hours: wind <10mph AND precip <20%
+  const next12 = (hrPeriods || []).slice(0, 12);
+  let sprayText = 'No good window';
+  let spraySub = 'next 12h';
+  const curWindSpeed = parseInt((cur.windSpeed || '0').match(/\d+/)?.[0] ?? '0');
+  const curPrecip = precip ?? 0;
+  if (curWindSpeed < 10 && curPrecip < 20) {
+    sprayText = 'Good now';
+    spraySub = 'wind & precip OK';
+  } else {
+    // Find first good window in next 12h
+    const goodIdx = next12.findIndex((p, i) => {
+      if (i === 0) return false; // we already checked current
+      const spd = parseInt((p.windSpeed || '0').match(/\d+/)?.[0] ?? '0');
+      const pp = p.probabilityOfPrecipitation?.value ?? 0;
+      return spd < 10 && pp < 20;
+    });
+    if (goodIdx > 0) {
+      const goodPeriod = next12[goodIdx];
+      // Parse the start time from the period's startTime ISO string
+      const startDt = new Date(goodPeriod.startTime);
+      const timeStr = startDt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+      sprayText = 'Best at ' + timeStr;
+      spraySub = 'in ~' + goodIdx + 'h';
+    }
+  }
+  document.getElementById('wc-spray').textContent = sprayText;
+  document.getElementById('wc-spray-sub').textContent = spraySub;
+
+  // Soil moisture estimate — look at past 12h of hourly precip chances
+  const past12 = (hrPeriods || []).slice(0, 12);
+  const avgPrecip = past12.length
+    ? past12.reduce((s, p) => s + (p.probabilityOfPrecipitation?.value ?? 0), 0) / past12.length
+    : precip ?? 0;
+  let soilText = 'Dry';
+  let soilSub = 'may need irrigation';
+  if (avgPrecip >= 50) { soilText = 'Wet'; soilSub = 'hold off on watering'; }
+  else if (avgPrecip >= 25) { soilText = 'Moderate'; soilSub = 'check before watering'; }
+  document.getElementById('wc-soil').textContent = soilText;
+  document.getElementById('wc-soil-sub').textContent = soilSub;
+
+  // Advisory line
+  let advisory = '';
+  if (hi != null && hi >= 103) advisory = '⚠️ Danger-level heat index — rotate crews and watch for heat illness.';
+  else if (hi != null && hi >= 91) advisory = '⚠️ High heat advisory — schedule heavy work early morning, hydrate frequently.';
+  else if (rainHourIdx === 0) advisory = '🌧️ Rain currently likely — consider indoor tasks until conditions improve.';
+  else if (rainHourIdx > 0 && rainHourIdx <= 3) advisory = '🌧️ Rain expected in ~' + rainHourIdx + 'h — wrap up outdoor tasks soon.';
+  else advisory = '✓ Conditions look workable — monitor throughout the day.';
+  document.getElementById('wc-advisory').textContent = advisory;
 }
 
-function manualStation(){
-  const t=parseFloat(document.getElementById('m-temp').value),h=parseFloat(document.getElementById('m-hum').value);
-  const w=parseFloat(document.getElementById('m-wind').value),r=parseFloat(document.getElementById('m-rain').value);
-  setStation(isNaN(t)?null:t,isNaN(h)?null:h,isNaN(w)?null:w,null,isNaN(r)?null:r);
+// ── WEEK AHEAD PLANNING ───────────────────────────
+function updateWeekPlanning(days5) {
+  const el = document.getElementById('weekGrid');
+  if (!days5 || !days5.length) { el.innerHTML = '<div style="font-size:12px;color:var(--text-muted)">No forecast data.</div>'; return; }
+
+  el.innerHTML = days5.map(p => {
+    const temp = p.temperature;
+    const precip = p.probabilityOfPrecipitation?.value ?? 0;
+    const forecast = (p.shortForecast || '').toLowerCase();
+    const windSpeeds = (p.windSpeed || '').match(/\d+/g);
+    const maxWind = windSpeeds ? Math.max(...windSpeeds.map(Number)) : 0;
+
+    // Determine day rating
+    let rating = 'green', label = 'Go';
+    const hasStorm = forecast.includes('thunderstorm') || forecast.includes('severe') || forecast.includes('tornado');
+    const hasHighRain = precip >= 60;
+    const hasModRain = precip >= 30;
+    const hasExtremeHeat = temp >= 100;
+    const hasHighHeat = temp >= 90;
+    const hasGust = maxWind >= 25;
+    const hasCold = temp <= 32;
+
+    if (hasStorm || hasHighRain || hasExtremeHeat || hasCold) {
+      rating = 'red'; label = 'Rain day';
+      if (hasStorm) label = 'Storms';
+      if (hasCold) label = 'Freeze';
+      if (hasExtremeHeat) label = 'Heat alert';
+    } else if (hasModRain || hasHighHeat || hasGust) {
+      rating = 'yellow'; label = 'Caution';
+      if (hasHighHeat) label = 'Hot';
+      if (hasGust) label = 'Gusty';
+    }
+
+    const dotColor = rating === 'green' ? 'var(--green)' : rating === 'yellow' ? 'var(--amber)' : 'var(--red)';
+    const labelColor = rating === 'green' ? 'var(--green)' : rating === 'yellow' ? 'var(--amber-dark)' : 'var(--red)';
+    const dayName = (p.name || '').slice(0, 3);
+
+    return `<div class="week-day">
+      <div class="week-day-name">${dayName}</div>
+      <div class="week-icon">${wxIcon(p.shortForecast)}</div>
+      <div class="week-hi">${temp}°</div>
+      <div class="week-dot" style="background:${dotColor}"></div>
+      <div class="week-lbl" style="color:${labelColor}">${label}</div>
+    </div>`;
+  }).join('');
 }
+
 
 // ── BULLETIN BOARD ───────────────────────────────
 async function postBulletin() {
